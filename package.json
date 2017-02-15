@@ -1,0 +1,17 @@
+{
+  "name": "ds-dude",
+  "version": "1.0.0",
+  "description": "Chatbot for Telegram",
+  "main": "dudeBot.js",
+  "dependencies": {
+    "dotenv": "^4.0.0",
+    "node-telegram-bot-api": "^0.27.0",
+    "rss-to-json": "^1.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dominik Speh <mail@domi-speh.de>",
+  "license": "ISC"
+}
