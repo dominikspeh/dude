@@ -1,10 +1,18 @@
 const Bot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 
+const fritzbox = require('./fritzbox');
 const vfb = require('./vfb');
+const temp = require('./temperature');
+const smartsocket = require('./smartsocket');
 
+// CONFIGS
 dotenv.load({ path: '.env' });
-
+mongoose.connect(process.env.MONGODB_URI || process.env.MONGOLAB_URI);
+mongoose.connection.on('error', () => {
+    process.exit();
+});
 
 const token = process.env.TelegramAPI;
 
@@ -12,19 +20,146 @@ const token = process.env.TelegramAPI;
 const dude = new Bot(token, { polling: true });
 
 // News Counter
-const user = [];
+var newsCounter = 0;
 
+// SMART SOCKET
+dude.onText(/\/sockets/, (msg) => {
 
+    const fromId = msg.from.id;
+    const options = {
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+        reply_markup: {
+            inline_keyboard: []
+        }
+    };
 
-dude.onText(/\/vfbnews/, (msg) => {
-    var chatId = msg.from.id;
+    smartsocket.getSockets().then(sockets => {
+        for (const socket of sockets) {
+            var value ;
 
-    var newUser = {};
-    newUser[chatId] = {
-        vfbnews : 0
+            if (socket.mode != 0) {
+                // ON
+                options.reply_markup.inline_keyboard.push([
+                    {
+                        text : socket.name+"  ✅",
+                        callback_data : socket._id,
+                    }
+                ])
+            }
+            else {
+                // OFF
+                options.reply_markup.inline_keyboard.push([
+                    {
+                        text : socket.name+"  ❎",
+                        callback_data : socket._id,
+                    }
+                ])
+            }
+
+        }
+
+        dude.sendMessage(fromId, "Welche Steckdose soll eingeschalten werden?", options);
+
+    })
+});
+
+dude.on('callback_query', function (msg) {
+    const options = {
+        inline_keyboard: []
 
     };
-    user.push(newUser)
+    smartsocket.turnSocket(msg.data).then(value => {
+        dude.answerCallbackQuery(msg.id, 'Ok, Steckdose wurde angsteuert!!!');
+
+        smartsocket.getSockets().then(sockets => {
+            for (const socket of sockets) {
+                var value ;
+
+                if (socket.mode != 0) {
+
+                    // ON
+                    options.inline_keyboard.push([
+                        {
+                            text : socket.name+"  ✅",
+                            callback_data : socket._id,
+                        }
+                    ])
+                }
+                else {
+
+                    // OFF
+                    options.inline_keyboard.push([
+                        {
+                            text : socket.name+"  ❎",
+                            callback_data : socket._id,
+                        }
+                    ])
+                }
+
+            }
+
+
+            dude.editMessageText("Steckdose wurde angesteuert!",
+                {
+                    chat_id: msg.from.id,
+                    message_id: msg.message.message_id,
+                    reply_markup: options
+                });
+
+
+        });
+
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+});
+
+
+
+// FRITZBOX
+dude.onText(/\/home/, (msg) => {
+
+    const fromId = msg.from.id;
+    dude.sendMessage(fromId, "Folgende Geräte sind verbunden:");
+
+
+    fritzbox.getCurrentlyHomeDevices().then(devices => {
+        for (const device of devices) {
+            dude.sendMessage(fromId, device.name);
+        }
+    });
+});
+
+// TEMPERATURE
+dude.onText(/\/room_temperature/, (msg) => {
+
+    const fromId = msg.from.id;
+
+
+    temp.getHomeTemperature().then(value => {
+
+       dude.sendMessage(fromId, "Die Temperatur beträgt "+value+"°C");
+
+    });
+});
+
+// VFB
+dude.onText(/\/vfbnews/, (msg) => {
+    var chatId = msg.from.id;
+    newsCounter = 0;
 
     dude.sendMessage(chatId, "Ok! Hier ein paar News vom VfB Stuttgart");
 
@@ -43,9 +178,9 @@ dude.onText(/\/vfbnews/, (msg) => {
 
     vfb.loadFeed().then(data => {
 
-        const title = data.feed.items[0].title;
-        const description = data.feed.items[0].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
-        const link = data.feed.items[0].link;
+        const title = data.feed.items[newsCounter].title;
+        const description = data.feed.items[newsCounter].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
+        const link = data.feed.items[newsCounter].link;
 
         dude.sendMessage(chatId, "<b>"+title+"</b>\n"+description+"\n\n<a href='"+link+"'>Artikel lesen</a>", options);
 
@@ -56,9 +191,7 @@ dude.onText(/\/vfbnews/, (msg) => {
 // REACT VFB NEWS FEED
 dude.onText(/\Show me more/, (msg) => {
     const chatId = msg.from.id;
-    user[0][chatId].vfbnews = user[0][chatId].vfbnews +1;
-
-    const newIndex = user[0][chatId].vfbnews
+    newsCounter++;
 
     dude.sendMessage(chatId, "Nice! Hier weitere News vom VfB Stuttgart");
 
@@ -75,9 +208,9 @@ dude.onText(/\Show me more/, (msg) => {
 
     vfb.loadFeed().then(data => {
 
-        const title = data.feed.items[newIndex].title;
-        const description = data.feed.items[newIndex].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
-        const link = data.feed.items[newIndex].link;
+        const title = data.feed.items[newsCounter].title;
+        const description = data.feed.items[newsCounter].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
+        const link = data.feed.items[newsCounter].link;
 
         dude.sendMessage(chatId, "<b>"+title+"</b>\n"+description+"\n\n<a href='"+link+"'>Artikel lesen</a>", options);
 
@@ -95,20 +228,13 @@ dude.onText(/\That's enough/, (msg) => {
         })
     };
 
-    if ( user[0][chatId] =! undefined){
-        user[0][chatId].vfbnews = 0;
-        dude.sendMessage(chatId, "Ok, das wars", options);
-
-    }
-    else {
-        dude.sendMessage(chatId, "", options);
-
-    }
-
+    dude.sendMessage(chatId, "Ok, das wars", options);
 
 
 
 
 
 });
+
+
 

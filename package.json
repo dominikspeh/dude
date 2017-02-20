@@ -4,7 +4,10 @@
   "description": "Chatbot for Telegram",
   "main": "dudeBot.js",
   "dependencies": {
+    "crypto": "0.0.3",
     "dotenv": "^4.0.0",
+    "ds18b20": "^0.1.0",
+    "mongoose": "^4.8.4",
     "node-telegram-bot-api": "^0.27.0",
     "rss-to-json": "^1.0.2"
   },
