@@ -43,7 +43,12 @@ dude.onText(/\/sockets/, (msg) => {
                 options.reply_markup.inline_keyboard.push([
                     {
                         text : socket.name+"  ✅",
-                        callback_data : socket._id,
+                        callback_data : JSON.stringify(
+                            {
+                                text: socket._id,
+                                type: "sockets"
+                            }
+                        )
                     }
                 ])
             }
@@ -52,7 +57,12 @@ dude.onText(/\/sockets/, (msg) => {
                 options.reply_markup.inline_keyboard.push([
                     {
                         text : socket.name+"  ❎",
-                        callback_data : socket._id,
+                        callback_data : JSON.stringify(
+                            {
+                                text: socket._id,
+                                type: "sockets"
+                            }
+                        )
                     }
                 ])
             }
@@ -64,65 +74,108 @@ dude.onText(/\/sockets/, (msg) => {
     })
 });
 
+
 dude.on('callback_query', function (msg) {
-    const options = {
-        inline_keyboard: []
 
-    };
-    smartsocket.turnSocket(msg.data).then(value => {
-        dude.answerCallbackQuery(msg.id, 'Ok, Steckdose wurde angsteuert!!!');
+    var data = JSON.parse(msg.data);
 
-        smartsocket.getSockets().then(sockets => {
-            for (const socket of sockets) {
-                var value ;
+    if(data.type == "vfb"){
 
-                if (socket.mode != 0) {
+        var newsID = data.nr+1;
 
-                    // ON
-                    options.inline_keyboard.push([
-                        {
-                            text : socket.name+"  ✅",
-                            callback_data : socket._id,
-                        }
-                    ])
-                }
-                else {
+        vfb.loadFeed().then(data => {
 
-                    // OFF
-                    options.inline_keyboard.push([
-                        {
-                            text : socket.name+"  ❎",
-                            callback_data : socket._id,
-                        }
-                    ])
-                }
-
-            }
+            const title = data.feed.items[newsID].title;
+            const description = data.feed.items[newsID].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
+            const link = data.feed.items[newsID].link;
 
 
-            dude.editMessageText("Steckdose wurde angesteuert!",
+            dude.editMessageText("<b>"+title+"</b>\n"+description+"\n\n<a href='"+link+"'>Artikel lesen</a>",
                 {
                     chat_id: msg.from.id,
                     message_id: msg.message.message_id,
-                    reply_markup: options
+                    parse_mode: 'HTML',
+                    disable_web_page_preview: true,
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: "More News",
+                                    callback_data: JSON.stringify(
+                                        {
+                                            text: "more",
+                                            type: "vfb",
+                                            nr: newsID
+                                        }
+                                    )
+                                }
+                            ],
+
+                        ]
+                    }
                 });
-
-
         });
 
-    });
+
+    }
+
+    if(data.type == "sockets"){
+        const options = {
+            inline_keyboard: []
+
+        };
+        smartsocket.turnSocket(data.text).then(value => {
+            dude.answerCallbackQuery(msg.id, 'Ok, Steckdose wurde angsteuert!!!');
+
+            smartsocket.getSockets().then(sockets => {
+                for (const socket of sockets) {
+                    var value ;
+
+                    if (socket.mode != 0) {
+
+                        // ON
+                        options.inline_keyboard.push([
+                            {
+                                text : socket.name+"  ✅",
+                                callback_data : JSON.stringify(
+                                    {
+                                        text: socket._id,
+                                        type: "sockets"
+                                    }
+                                )
+                            }
+                        ])
+                    }
+                    else {
+
+                        // OFF
+                        options.inline_keyboard.push([
+                            {
+                                text : socket.name+"  ❎",
+                                callback_data : JSON.stringify(
+                                    {
+                                        text: socket._id,
+                                        type: "sockets"
+                                    }
+                                )
+                            }
+                        ])
+                    }
+
+                }
+
+                dude.editMessageText("Steckdose wurde angesteuert!",
+                    {
+                        chat_id: msg.from.id,
+                        message_id: msg.message.message_id,
+                        reply_markup: options
+                    });
 
 
+            });
 
-
-
-
-
-
-
-
-
-
+        });
+    }
 
 
 });
@@ -156,6 +209,7 @@ dude.onText(/\/room_temperature/, (msg) => {
     });
 });
 
+
 // VFB
 dude.onText(/\/vfbnews/, (msg) => {
     var chatId = msg.from.id;
@@ -168,12 +222,23 @@ dude.onText(/\/vfbnews/, (msg) => {
     const options = {
         parse_mode: 'HTML',
         disable_web_page_preview: true,
-        reply_markup: JSON.stringify({
-            keyboard: [
-                ["Show me more"],
-                ["That's enough"],
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    {
+                        text: "More News",
+                        callback_data: JSON.stringify(
+                            {
+                                text: "more",
+                                type: "vfb",
+                                nr: 0
+                            }
+                            )
+                    }
+                ],
+
             ]
-        })
+        }
     };
 
     vfb.loadFeed().then(data => {
