@@ -2,6 +2,7 @@ const Bot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
+const camera = require('./camera');
 const fritzbox = require('./fritzbox');
 const vfb = require('./vfb');
 const temp = require('./temperature');
@@ -84,6 +85,8 @@ dude.on('callback_query', function (msg) {
         var newsID = data.nr+1;
 
         vfb.loadFeed().then(data => {
+            dude.answerCallbackQuery(msg.id, 'Neue Newsinhalte wurden bereitgestellt!');
+
 
             const title = data.feed.items[newsID].title;
             const description = data.feed.items[newsID].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
@@ -100,7 +103,7 @@ dude.on('callback_query', function (msg) {
                         inline_keyboard: [
                             [
                                 {
-                                    text: "More News",
+                                    text: "Show more News",
                                     callback_data: JSON.stringify(
                                         {
                                             text: "more",
@@ -110,6 +113,7 @@ dude.on('callback_query', function (msg) {
                                     )
                                 }
                             ],
+
 
                         ]
                     }
@@ -181,6 +185,17 @@ dude.on('callback_query', function (msg) {
 });
 
 
+// CAMERA
+dude.onText(/\/makePhoto/, (msg) => {
+
+    const fromId = msg.from.id;
+
+    camera.makePhoto().then(value => {
+
+        dude.sendPhoto(fromId, value);
+
+    });
+});
 
 // FRITZBOX
 dude.onText(/\/home/, (msg) => {
@@ -226,7 +241,7 @@ dude.onText(/\/vfbnews/, (msg) => {
             inline_keyboard: [
                 [
                     {
-                        text: "More News",
+                        text: "Show more News",
                         callback_data: JSON.stringify(
                             {
                                 text: "more",

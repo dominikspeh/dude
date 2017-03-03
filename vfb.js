@@ -11,7 +11,6 @@ function loadFeed() {
                 feed: rss
             };
             resolve(data);
-
         });
     });
 }
