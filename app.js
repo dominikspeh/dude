@@ -186,7 +186,7 @@ dude.on('callback_query', function (msg) {
 
 
 // CAMERA
-dude.onText(/\/makePhoto/, (msg) => {
+dude.onText(/\/snap/, (msg) => {
 
     const fromId = msg.from.id;
 
@@ -212,7 +212,7 @@ dude.onText(/\/home/, (msg) => {
 });
 
 // TEMPERATURE
-dude.onText(/\/room_temperature/, (msg) => {
+dude.onText(/\/temperature/, (msg) => {
 
     const fromId = msg.from.id;
 
@@ -223,7 +223,6 @@ dude.onText(/\/room_temperature/, (msg) => {
 
     });
 });
-
 
 // VFB
 dude.onText(/\/vfbnews/, (msg) => {
@@ -265,54 +264,6 @@ dude.onText(/\/vfbnews/, (msg) => {
         dude.sendMessage(chatId, "<b>"+title+"</b>\n"+description+"\n\n<a href='"+link+"'>Artikel lesen</a>", options);
 
     });
-
-});
-
-// REACT VFB NEWS FEED
-dude.onText(/\Show me more/, (msg) => {
-    const chatId = msg.from.id;
-    newsCounter++;
-
-    dude.sendMessage(chatId, "Nice! Hier weitere News vom VfB Stuttgart");
-
-    const options = {
-        parse_mode: 'HTML',
-        disable_web_page_preview: true,
-        reply_markup: JSON.stringify({
-            keyboard: [
-                ["Show me more"],
-                ["That's enough"],
-            ]
-        })
-    };
-
-    vfb.loadFeed().then(data => {
-
-        const title = data.feed.items[newsCounter].title;
-        const description = data.feed.items[newsCounter].description.replace(/<\/?[^>]+(>|$)/g,"").trim();
-        const link = data.feed.items[newsCounter].link;
-
-        dude.sendMessage(chatId, "<b>"+title+"</b>\n"+description+"\n\n<a href='"+link+"'>Artikel lesen</a>", options);
-
-    });
-
-});
-
-dude.onText(/\That's enough/, (msg) => {
-    const chatId = msg.from.id;
-    const options = {
-        parse_mode: 'HTML',
-        disable_web_page_preview: true,
-        reply_markup: JSON.stringify({
-            remove_keyboard: true
-        })
-    };
-
-    dude.sendMessage(chatId, "Ok, das wars", options);
-
-
-
-
 
 });
 
