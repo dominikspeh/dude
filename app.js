@@ -195,7 +195,9 @@ dude.on('message', function(msg) {
        youtube.downloadVideo(msg.text).then( value =>
            {
                dude.sendMessage(msg.from.id, `${value} erfolgreich heruntergeladen!`);
-           })
+           }, reason => {
+           dude.sendMessage(msg.from.id, `Song wurde bereits heruntergeladen!`);
+       })
 
     }
 
