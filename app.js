@@ -7,6 +7,8 @@ const fritzbox = require('./fritzbox');
 const vfb = require('./vfb');
 const temp = require('./temperature');
 const smartsocket = require('./smartsocket');
+const youtube = require('./youtube');
+
 
 // CONFIGS
 dotenv.load({ path: '.env' });
@@ -184,6 +186,20 @@ dude.on('callback_query', function (msg) {
 
 });
 
+
+// YOUTUBE
+dude.on('message', function(msg) {
+    console.log("message", msg);
+
+    if (msg.entities[0].type == "url" && msg.entities[0].length == 42) {
+       youtube.downloadVideo(msg.text).then( value =>
+           {
+               dude.sendMessage(msg.from.id, `${value} erfolgreich heruntergeladen!`);
+           })
+
+    }
+
+});
 
 // CAMERA
 dude.onText(/\/snap/, (msg) => {

@@ -10,7 +10,9 @@
     "mongoose": "^4.8.4",
     "node-telegram-bot-api": "^0.27.0",
     "raspicam": "^0.2.13",
-    "rss-to-json": "^1.0.2"
+    "rss-to-json": "^1.0.2",
+    "youtube-info": "^1.1.1",
+    "youtube-mp3-downloader": "^0.4.4"
   },
   "devDependencies": {},
   "scripts": {

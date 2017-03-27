@@ -10,3 +10,7 @@ node_modules
 
 ### config
 config.json
+
+### Disable songs and images folder
+images
+songs
